@@ -22,7 +22,7 @@ test("Send and receive a message", function() {
 test("Send and receive a message with a JSON body", function() {
   
   var client = Stomp.client(TEST.url);
-  var payload = {text: "hello", bool: true, value: Math.random()};
+  var payload = {text: "h\u00E4llo", bool: true, value: Math.random()};
   
   client.connect(TEST.login, TEST.password,
     function() {
