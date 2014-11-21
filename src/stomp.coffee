@@ -253,9 +253,9 @@ class Client
         @debug? "--- got data length: #{arr.length}"
         # Return a string formed by all the char codes stored in the Uint8array
         charCode = String.fromCharCode
-        i = 0;
+        i = 0
         (while i < arr.length
-          byte1 = arr[i++];
+          byte1 = arr[i++]
           if byte1 < 0x80
             charCode(byte1)
           else if byte1 >= 0xC2 and byte1 < 0xE0
