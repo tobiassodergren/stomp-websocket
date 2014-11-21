@@ -163,11 +163,11 @@ class Client
   #     };
   debug: (message) ->
     window?.console?.log message
-      
+
   # Utility method to get the current timestamp (Date.now is not defined in IE8)
   now= ->
     if Date.now then Date.now() else new Date().valueOf
-  
+
   # Base method to transmit any stomp frame
   _transmit: (command, headers, body) ->
     out = Frame.marshall(command, headers, body)
@@ -252,7 +252,27 @@ class Client
         arr = new Uint8Array(evt.data)
         @debug? "--- got data length: #{arr.length}"
         # Return a string formed by all the char codes stored in the Uint8array
-        (String.fromCharCode(c) for c in arr).join('')
+        charCode = String.fromCharCode
+        i = 0;
+        (while i < arr.length
+          byte1 = arr[i++];
+          if byte1 < 0x80
+            charCode(byte1)
+          else if byte1 >= 0xC2 and byte1 < 0xE0
+            byte2 = arr[i++]
+            charCode(((byte1 & 0x1F)<<6) + (byte2 & 0x3F))
+          else if byte1 >= 0xE0 and byte1 < 0xF0
+            byte2 = arr[i++]
+            byte3 = arr[i++]
+            charCode(((byte1 & 0xFF)<<12) + ((byte2 & 0x3F)<<6) + (byte3 & 0x3F))
+          else if byte1 >= 0xF0 and byte1 < 0xF5
+            byte2 = arr[i++]
+            byte3 = arr[i++]
+            byte4 = arr[i++]
+            codepoint = ((byte1 & 0x07)<<18) + ((byte2 & 0x3F)<<12)+ ((byte3 & 0x3F)<<6) + (byte4 & 0x3F)
+            codepoint -= 0x10000
+            charCode((codepoint >> 10) + 0xD800, (codepoint & 0x3FF) + 0xDC00)
+        ).join('')
       else
         # take the data directly from the WebSocket `data` field
         evt.data
@@ -398,7 +418,7 @@ class Client
       abort: ->
         client.abort txid
     }
-  
+
   # [COMMIT Frame](http://stomp.github.com/stomp-specification-1.1.html#COMMIT)
   #
   # * `transaction` is MANDATORY.
@@ -413,7 +433,7 @@ class Client
     @_transmit "COMMIT", {
       transaction: transaction
     }
-  
+
   # [ABORT Frame](http://stomp.github.com/stomp-specification-1.1.html#ABORT)
   #
   # * `transaction` is MANDATORY.
@@ -428,7 +448,7 @@ class Client
     @_transmit "ABORT", {
       transaction: transaction
     }
-  
+
   # [ACK Frame](http://stomp.github.com/stomp-specification-1.1.html#ACK)
   #
   # * `messageID` & `subscription` are MANDATORY.
